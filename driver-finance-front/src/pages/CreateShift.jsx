@@ -1,68 +1,87 @@
 import { useState } from "react";
 
 export default function CreateShift() {
-  const [form, setForm] = useState({
-    income: "",
-    gas: "",
-    otherExpenses: ""
-  });
+  const [shiftDate, setShiftDate] = useState(
+    new Date().toLocaleDateString("en-CA")
+  );
+  const [income, setIncome] = useState("");
+  const [gas, setGas] = useState("");
+  const [otherExpenses, setOtherExpenses] = useState("");
 
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const handleSubmit = async () => {
-    const today = new Date().toISOString().split("T")[0];
-
-    await fetch("http://localhost:8080/api/shifts", {
+    const res = await fetch("http://localhost:8080/api/shifts", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        shiftDate: today,
-        income: Number(form.income),
-        gas: Number(form.gas),
-        otherExpenses: Number(form.otherExpenses)
-      })
+        shiftDate,
+        income: Number(income),
+        gas: Number(gas),
+        otherExpenses: Number(otherExpenses),
+      }),
     });
 
-    alert("Turno guardado 🚀");
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Turno guardado ✅");
+
+      // limpiar formulario
+      setIncome("");
+      setGas("");
+      setOtherExpenses("");
+    } else {
+      alert("Error: " + data.error);
+    }
   };
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1>Registrar turno</h1>
+      <h1>Registrar Turno</h1>
 
-      <input
-        name="income"
-        placeholder="Ingresos"
-        type="number"
-        onChange={handleChange}
-      />
+      <form onSubmit={handleSubmit}>
+        {/* 📅 Fecha (solo para pruebas) */}
+        <div>
+          <label>Fecha:</label>
+          <input
+            type="date"
+            value={shiftDate}
+            onChange={(e) => setShiftDate(e.target.value)}
+          />
+        </div>
 
-      <input
-        name="gas"
-        placeholder="Gasolina"
-        type="number"
-        onChange={handleChange}
-      />
+        <div>
+          <label>Ingresos:</label>
+          <input
+            type="number"
+            value={income}
+            onChange={(e) => setIncome(e.target.value)}
+          />
+        </div>
 
-      <input
-        name="otherExpenses"
-        placeholder="Otros gastos"
-        type="number"
-        onChange={handleChange}
-      />
+        <div>
+          <label>Gas:</label>
+          <input
+            type="number"
+            value={gas}
+            onChange={(e) => setGas(e.target.value)}
+          />
+        </div>
 
-      <br /><br />
+        <div>
+          <label>Otros gastos:</label>
+          <input
+            type="number"
+            value={otherExpenses}
+            onChange={(e) => setOtherExpenses(e.target.value)}
+          />
+        </div>
 
-      <button onClick={handleSubmit} style={{ fontSize: "20px" }}>
-        GUARDAR 🚗
-      </button>
+        <button type="submit">Guardar</button>
+      </form>
     </div>
   );
 }
