@@ -1,21 +1,22 @@
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { useState } from "react";
 import Dashboard from "./pages/Dashboard";
 import CreateShift from "./pages/CreateShift";
+import ShiftList from "./pages/ShiftList";
 
-function App() {
+export default function App() {
+  const [page, setPage] = useState("dashboard");
+
   return (
-    <BrowserRouter>
-      <div style={{ padding: "10px" }}>
-        <Link to="/">Resumen</Link> |{" "}
-        <Link to="/create">Registrar</Link>
-      </div>
+    <div>
+      <nav>
+        <button onClick={() => setPage("dashboard")}>Dashboard</button>
+        <button onClick={() => setPage("create")}>Crear</button>
+        <button onClick={() => setPage("list")}>Historial</button>
+      </nav>
 
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/create" element={<CreateShift />} />
-      </Routes>
-    </BrowserRouter>
+      {page === "dashboard" && <Dashboard />}
+      {page === "create" && <CreateShift />}
+      {page === "list" && <ShiftList />}
+    </div>
   );
 }
-
-export default App;

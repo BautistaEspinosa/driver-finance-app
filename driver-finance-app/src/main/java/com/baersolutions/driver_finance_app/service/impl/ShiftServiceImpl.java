@@ -45,7 +45,9 @@ public class ShiftServiceImpl implements ShiftService {
 		shift.setGas(request.gas());
 		shift.setOtherExpenses(request.otherExpenses());
 
+		System.out.println("🟢 Guardando shift con fecha: " + request.shiftDate());
 		Shift saved = shiftRepository.save(shift);
+		System.out.println("🟢 Shift guardado en BD: " + saved.getShiftDate());
 		return toResponse(saved);
 	}
 
@@ -240,4 +242,3 @@ public class ShiftServiceImpl implements ShiftService {
 		return safeIncome.subtract(safeGas).subtract(safeOtherExpenses);
 	}
 }
-

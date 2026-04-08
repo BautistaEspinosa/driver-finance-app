@@ -1,82 +1,135 @@
 import { useEffect, useState } from "react";
+import { getSummary, getShifts } from "../api/shiftApi";
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [filter, setFilter] = useState("today");
-  const [displayDate, setDisplayDate] = useState(""); // 🔥 NUEVO
+  const [displayDate, setDisplayDate] = useState("");
+  const [groupedData, setGroupedData] = useState({});
 
   useEffect(() => {
+    console.log(" Tipo filtro:", filter);
     loadSummary(filter);
   }, [filter]);
 
-  const format = (d) => {
-    return d.toLocaleDateString("en-CA");
+  const getLastShiftDate = async () => {
+    const shifts = await getShifts();
+
+    console.log(" Shifts recibidos:", shifts);
+
+    if (!shifts || shifts.length === 0) {
+      console.warn(" No hay fechas registradas");
+      return null;
+    }
+
+    const lastDate = shifts[0].shiftDate;
+
+    console.log("Última fecha:", lastDate);
+
+    return lastDate;
   };
 
-  // 🔥 Obtener la última fecha registrada
-  const getLastShiftDate = async () => {
-    const res = await fetch("http://localhost:8080/api/shifts");
-    const data = await res.json();
+  const groupByDay = (shifts) => {
+    console.log("Agrupando shifts:", shifts);
 
-    const shifts = data.data;
+    const result = {};
 
-    if (!shifts || shifts.length === 0) return null;
+    shifts.forEach((s) => {
+      const net =
+        Number(s.income) -
+        Number(s.gas) -
+        Number(s.otherExpenses);
 
-    return shifts[0].shiftDate;
+      if (!result[s.shiftDate]) {
+        result[s.shiftDate] = 0;
+      }
+
+      result[s.shiftDate] += net;
+    });
+
+    console.log(" Resultado agrupado:", result);
+
+    return result;
   };
 
   const loadSummary = async (type) => {
-    let url = "http://localhost:8080/api/shifts/summary";
-
-    let today;
+    let params = "";
+    let lastDate = null;
 
     if (type === "today" || type === "week") {
-      const lastDate = await getLastShiftDate();
+      lastDate = await getLastShiftDate();
 
       if (!lastDate) {
         setSummary(null);
         return;
       }
-
-      today = new Date(lastDate);
     }
 
+    let from, to;
+
     if (type === "today") {
-      const t = format(today);
-      url += `?from=${t}&to=${t}`;
-      setDisplayDate(t); // 🔥
+      from = lastDate;
+      to = lastDate;
+
+      params = `?from=${from}&to=${to}`;
+      setDisplayDate(from);
     }
 
     if (type === "week") {
-      const firstDay = new Date(today);
-      firstDay.setDate(today.getDate() - today.getDay());
+      const [y, m, d] = lastDate.split("-");
+      const dateObj = new Date(y, m - 1, d);
 
-      const from = format(firstDay);
-      const to = format(today);
+      const firstDay = new Date(dateObj);
+      firstDay.setDate(dateObj.getDate() - dateObj.getDay());
 
-      url += `?from=${from}&to=${to}`;
-      setDisplayDate(`${from} - ${to}`); // 🔥
+      from = firstDay.toLocaleDateString("en-CA");
+      to = lastDate;
+
+      params = `?from=${from}&to=${to}`;
+      setDisplayDate(`${from} - ${to}`);
     }
 
     if (type === "all") {
-      setDisplayDate("Todos los registros"); // 🔥
+      setDisplayDate("Todos los registros");
     }
 
-    console.log("URL:", url);
+    console.log(" Params:", params);
 
-    const res = await fetch(url);
-    const data = await res.json();
+    // SUMMARY
+    const summaryRes = await getSummary(params);
+    setSummary(summaryRes.data);
 
-    setSummary(data.data);
+    // SHIFTS
+    const shifts = await getShifts();
+
+    let filtered = [];
+
+    if (type === "today") {
+      filtered = shifts.filter((s) => s.shiftDate === lastDate);
+    }
+
+    if (type === "week") {
+      filtered = shifts.filter((s) => {
+        return s.shiftDate >= from && s.shiftDate <= to;
+      });
+    }
+
+    if (type === "all") {
+      filtered = shifts;
+    }
+
+    console.log("Filtrados:", filtered);
+
+    const grouped = groupByDay(filtered);
+    setGroupedData(grouped);
   };
 
-  if (!summary) return <p>Cargando...</p>;
+  if (!summary) return <p>No hay datos aún</p>;
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1>💸 Resumen</h1>
+      <h1> Dashboard</h1>
 
-      {/* 🔘 Filtros */}
       <div>
         <button onClick={() => setFilter("today")}>Hoy</button>
         <button onClick={() => setFilter("week")}>Semana</button>
@@ -86,12 +139,25 @@ export default function Dashboard() {
       <h2>Ganancia neta</h2>
       <h1>${summary.netEarnings}</h1>
 
-      {/* 🔥 AQUÍ YA FUNCIONA */}
-      <p>Día: {displayDate}</p>
+      <p>Periodo: {displayDate}</p>
 
       <p>Ingresos: ${summary.totalIncome}</p>
       <p>Gas: ${summary.totalGas}</p>
       <p>Otros: ${summary.totalOtherExpenses}</p>
+
+      <h3>Ganancias por día</h3>
+
+      {Object.keys(groupedData).length === 0 ? (
+        <p>No hay datos</p>
+      ) : (
+        <ul>
+          {Object.entries(groupedData).map(([date, total]) => (
+            <li key={date}>
+              {date}: ${total}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
