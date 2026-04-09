@@ -169,11 +169,10 @@ public class ShiftServiceImpl implements ShiftService {
 
 	@Override
 	public void deleteShift(Long id) {
-		Long required = requireId(id);
-		if (!shiftRepository.existsById(required)) {
-			throw new ResourceNotFoundException("Shift no encontrado: " + id);
-		}
-		shiftRepository.deleteById(required);
+		Shift shift = shiftRepository.findById(requireId(id))
+				.orElseThrow(() -> new ResourceNotFoundException("Shift no encontrado: " + id));
+
+		shiftRepository.delete(shift);
 	}
 
 	private List<Shift> findByRange(LocalDate from, LocalDate to) {

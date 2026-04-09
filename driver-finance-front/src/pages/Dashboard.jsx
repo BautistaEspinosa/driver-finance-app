@@ -1,37 +1,31 @@
 import { useEffect, useState } from "react";
 import { getSummary, getShifts } from "../api/shiftApi";
 
-export default function Dashboard() {
+export default function Dashboard({ refresh }) {
   const [summary, setSummary] = useState(null);
   const [filter, setFilter] = useState("today");
   const [displayDate, setDisplayDate] = useState("");
   const [groupedData, setGroupedData] = useState({});
 
   useEffect(() => {
-    console.log(" Tipo filtro:", filter);
+    console.log("Tipo filtro:", filter, "Refresh:", refresh);
     loadSummary(filter);
-  }, [filter]);
+  }, [filter, refresh]);
 
   const getLastShiftDate = async () => {
     const shifts = await getShifts();
 
-    console.log(" Shifts recibidos:", shifts);
+    console.log("Shifts recibidos:", shifts);
 
     if (!shifts || shifts.length === 0) {
-      console.warn(" No hay fechas registradas");
+      console.warn("No hay fechas registradas");
       return null;
     }
 
-    const lastDate = shifts[0].shiftDate;
-
-    console.log("Última fecha:", lastDate);
-
-    return lastDate;
+    return shifts[0].shiftDate;
   };
 
   const groupByDay = (shifts) => {
-    console.log("Agrupando shifts:", shifts);
-
     const result = {};
 
     shifts.forEach((s) => {
@@ -47,8 +41,7 @@ export default function Dashboard() {
       result[s.shiftDate] += net;
     });
 
-    console.log(" Resultado agrupado:", result);
-
+    console.log("Agrupado:", result);
     return result;
   };
 
@@ -58,11 +51,7 @@ export default function Dashboard() {
 
     if (type === "today" || type === "week") {
       lastDate = await getLastShiftDate();
-
-      if (!lastDate) {
-        setSummary(null);
-        return;
-      }
+      if (!lastDate) return;
     }
 
     let from, to;
@@ -70,7 +59,6 @@ export default function Dashboard() {
     if (type === "today") {
       from = lastDate;
       to = lastDate;
-
       params = `?from=${from}&to=${to}`;
       setDisplayDate(from);
     }
@@ -93,13 +81,13 @@ export default function Dashboard() {
       setDisplayDate("Todos los registros");
     }
 
-    console.log(" Params:", params);
+    console.log("Params:", params);
 
-    // SUMMARY
     const summaryRes = await getSummary(params);
+    console.log("Summary:", summaryRes);
+
     setSummary(summaryRes.data);
 
-    // SHIFTS
     const shifts = await getShifts();
 
     let filtered = [];
@@ -109,55 +97,88 @@ export default function Dashboard() {
     }
 
     if (type === "week") {
-      filtered = shifts.filter((s) => {
-        return s.shiftDate >= from && s.shiftDate <= to;
-      });
+      filtered = shifts.filter(
+        (s) => s.shiftDate >= from && s.shiftDate <= to
+      );
     }
 
     if (type === "all") {
       filtered = shifts;
     }
 
-    console.log("Filtrados:", filtered);
-
-    const grouped = groupByDay(filtered);
-    setGroupedData(grouped);
+    setGroupedData(groupByDay(filtered));
   };
 
-  if (!summary) return <p>No hay datos aún</p>;
+  if (!summary) return <p>No hay datos</p>;
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1> Dashboard</h1>
+    <div>
+      <h1>Dashboard</h1>
 
-      <div>
+      {/* Filtros */}
+      <div style={{ marginBottom: "20px" }}>
         <button onClick={() => setFilter("today")}>Hoy</button>
         <button onClick={() => setFilter("week")}>Semana</button>
         <button onClick={() => setFilter("all")}>Todo</button>
       </div>
 
-      <h2>Ganancia neta</h2>
-      <h1>${summary.netEarnings}</h1>
+      {/* Card principal */}
+      <div style={cardMain}>
+        <h2>Ganancia neta</h2>
+        <h1>${summary.netEarnings}</h1>
+        <p>Periodo: {displayDate}</p>
+      </div>
 
-      <p>Periodo: {displayDate}</p>
+      {/* Cards detalle */}
+      <div style={{ display: "flex", gap: "15px" }}>
+        <div style={card}>
+          <h3>Ingresos</h3>
+          <p>${summary.totalIncome}</p>
+        </div>
 
-      <p>Ingresos: ${summary.totalIncome}</p>
-      <p>Gas: ${summary.totalGas}</p>
-      <p>Otros: ${summary.totalOtherExpenses}</p>
+        <div style={card}>
+          <h3>Gas</h3>
+          <p>${summary.totalGas}</p>
+        </div>
 
-      <h3>Ganancias por día</h3>
+        <div style={card}>
+          <h3>Otros</h3>
+          <p>${summary.totalOtherExpenses}</p>
+        </div>
+      </div>
 
-      {Object.keys(groupedData).length === 0 ? (
-        <p>No hay datos</p>
-      ) : (
-        <ul>
-          {Object.entries(groupedData).map(([date, total]) => (
-            <li key={date}>
-              {date}: ${total}
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* Agrupación */}
+      <div style={{ marginTop: "20px" }}>
+        <h3>Ganancias por día</h3>
+
+        {Object.keys(groupedData).length === 0 ? (
+          <p>No hay datos</p>
+        ) : (
+          <ul>
+            {Object.entries(groupedData).map(([date, total]) => (
+              <li key={date}>
+                {date} - ${total}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
+
+const cardMain = {
+  background: "white",
+  padding: "20px",
+  borderRadius: "10px",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+  marginBottom: "20px",
+};
+
+const card = {
+  background: "white",
+  padding: "15px",
+  borderRadius: "10px",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+  flex: 1,
+};
