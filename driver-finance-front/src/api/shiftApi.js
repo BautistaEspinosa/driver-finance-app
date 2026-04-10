@@ -1,5 +1,6 @@
 const BASE_URL = "http://localhost:8080/api/shifts";
-
+const BASE_URL_WEEKLY_GOAL = "http://localhost:8080/api/weekly-goals/current";
+const BAE_URL_WEEKLY_GOAL_POST= "http://localhost:8080/api/weekly-goals";
 export const createShift = async (payload) => {
   console.log("Enviando turno:", payload);
 
@@ -81,4 +82,20 @@ export const patchShift = async (id, payload) => {
   console.log("PATCH response:", json);
 
   return json;
+};
+
+export const getWeeklyGoal = async () => {
+  const res = await fetch(BASE_URL_WEEKLY_GOAL);
+  const json = await res.json();
+  return json;
+};
+
+export const createWeeklyGoal = async (payload) => {
+  const res = await fetch(BAE_URL_WEEKLY_GOAL_POST, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  return await res.json();
 };
