@@ -1,101 +1,84 @@
 const BASE_URL = "http://localhost:8080/api/shifts";
-const BASE_URL_WEEKLY_GOAL = "http://localhost:8080/api/weekly-goals/current";
-const BAE_URL_WEEKLY_GOAL_POST= "http://localhost:8080/api/weekly-goals";
-export const createShift = async (payload) => {
-  console.log("Enviando turno:", payload);
+const BASE_URL_WEEKLY_GOAL = "http://localhost:8080/api/weekly-goals";
 
+// 🔥 helper centralizado
+const handleResponse = async (res) => {
+  const json = await res.json();
+
+  if (!json.success) {
+    throw new Error(json.error || "Error desconocido");
+  }
+
+  return json.data;
+};
+
+// =======================
+// SHIFTS
+// =======================
+
+export const getShifts = async () => {
+  const res = await fetch(BASE_URL);
+  return handleResponse(res);
+};
+
+export const createShift = async (payload) => {
   const res = await fetch(BASE_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
-  const json = await res.json();
-
-  console.log("Respuesta createShift:", json);
-
-  return json;
+  return handleResponse(res);
 };
 
 export const getSummary = async (params = "") => {
-  console.log("GET summary:", `${BASE_URL}/summary${params}`);
-
   const res = await fetch(`${BASE_URL}/summary${params}`);
-  const json = await res.json();
-
-  console.log("Summary response:", json);
-
-  return json;
-};
-
-export const getShifts = async () => {
-  console.log("GET shifts");
-
-  const res = await fetch(BASE_URL);
-  const json = await res.json();
-
-  console.log("Shifts response:", json);
-
-  if (!json.success) {
-    throw new Error(json.error);
-  }
-
-  return json.data;
+  return handleResponse(res);
 };
 
 export const deleteShift = async (id) => {
-console.log("DELETE -> id:", id);
   const res = await fetch(`${BASE_URL}/${id}`, {
     method: "DELETE",
   });
-const json = await res.json();
-console.log("DELETE response: ",json);
-  return json;
+
+  return handleResponse(res);
 };
 
-export const updateShift = async(id,payload) =>{
-console.log("PUT UPDATE SHIFT id: ",id);
-console.log("payload: ",payload);
+export const updateShift = async (id, payload) => {
+  const res = await fetch(`${BASE_URL}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 
-const res = await fetch(`${BASE_URL}/${id}`,{
-method: "PUT",
-headers: { "Content-Type": "application/json" },
-body: JSON.stringify(payload),
-});
-
-const json = await res.json();
-console.log("PUT response: ",json);
-return json;
-}
+  return handleResponse(res);
+};
 
 export const patchShift = async (id, payload) => {
-  console.log("PATCH shift:", id, payload);
-
   const res = await fetch(`${BASE_URL}/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
-  const json = await res.json();
-
-  console.log("PATCH response:", json);
-
-  return json;
+  return handleResponse(res);
 };
 
+// =======================
+// WEEKLY GOAL
+// =======================
+
 export const getWeeklyGoal = async () => {
-  const res = await fetch(BASE_URL_WEEKLY_GOAL);
-  const json = await res.json();
-  return json;
+  const res = await fetch(`${BASE_URL_WEEKLY_GOAL}/current`);
+  return handleResponse(res);
 };
 
 export const createWeeklyGoal = async (payload) => {
-  const res = await fetch(BAE_URL_WEEKLY_GOAL_POST, {
+  const res = await fetch(BASE_URL_WEEKLY_GOAL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
-  return await res.json();
+  return handleResponse(res);
 };

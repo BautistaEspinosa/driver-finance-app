@@ -7,30 +7,17 @@ export default function CreateShift({ onCreated }) {
   const [loading, setLoading] = useState(false);
 
   const handleCreate = async (data) => {
-    console.log("Enviando al backend:", data);
-
     setLoading(true);
     setMessage("");
 
     try {
-      const res = await createShift(data);
+      await createShift(data);
 
-      console.log("Respuesta backend:", res);
+      setMessage("Turno guardado correctamente");
+      onCreated();
 
-      if (res.success) {
-        console.log("Turno guardado correctamente");
-
-        setMessage("Turno guardado correctamente");
-
-        console.log("Creado → notificando dashboard");
-        onCreated();
-      } else {
-        console.error("Error:", res.error);
-        setMessage(res.error || "Error al guardar");
-      }
     } catch (error) {
-      console.error("Error inesperado:", error);
-      setMessage("Error de conexión con el servidor");
+      setMessage(error.message || "Error de conexión");
     } finally {
       setLoading(false);
     }
@@ -40,11 +27,7 @@ export default function CreateShift({ onCreated }) {
     <div style={{ maxWidth: "400px" }}>
       <h1>Registrar turno</h1>
 
-      {message && (
-        <p style={{ background: "#e0ffe0", padding: "10px", borderRadius: "5px" }}>
-          {message}
-        </p>
-      )}
+      {message && <p>{message}</p>}
 
       <ShiftForm onSubmit={handleCreate} loading={loading} />
     </div>

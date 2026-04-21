@@ -11,10 +11,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+    open-in-view: false
     properties:
       hibernate:
         format_sql: true
-    open-in-view: false
 
   h2:
     console:
@@ -26,5 +26,10 @@ server:
 
 logging:
   level:
-    org.hibernate.SQL: debug
-    org.hibernate.orm.jdbc.bind: trace
+    root: info                  # Nivel global
+    com.baersolutions: debug   # Tu app (más detalle)
+    org.hibernate.SQL: debug   # Ver queries SQL
+    org.hibernate.orm.jdbc.bind: trace  # Ver parámetros de queries
+
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

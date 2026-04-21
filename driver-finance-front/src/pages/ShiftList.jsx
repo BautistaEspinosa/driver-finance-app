@@ -11,57 +11,30 @@ export default function ShiftList({ onDeleted }) {
   }, []);
 
   const loadShifts = async () => {
-    console.log("Cargando historial...");
-
     const data = await getShifts();
-
-    console.log("Historial:", data);
-
     setShifts(data || []);
   };
 
   const handleDelete = async (id) => {
-    console.log("Click eliminar:", id);
+    if (!window.confirm("¿Eliminar turno?")) return;
 
-    const confirmDelete = window.confirm("¿Eliminar turno?");
-
-    if (!confirmDelete) {
-      console.log("Cancelado");
-      return;
-    }
-
-    const res = await deleteShift(id);
-
-    if (res.success) {
-      console.log("Eliminado correctamente");
-
+    try {
+      await deleteShift(id);
       await loadShifts();
-
-      if (onDeleted) {
-        console.log("Notificando refresh dashboard");
-        onDeleted();
-      }
-    } else {
-      console.error("Error al eliminar:", res.error);
-      alert(res.error);
+      onDeleted?.();
+    } catch (error) {
+      alert(error.message);
     }
   };
 
   if (editingShift) {
-    console.log("Modo edición activo:", editingShift);
-
     return (
       <EditShift
         shift={editingShift}
         onUpdated={() => {
-          console.log("Update completado → regresando a lista");
-
-          setEditingShift(null); // regresar a lista
+          setEditingShift(null);
           loadShifts();
-
-          if (onDeleted) {
-            onDeleted(); // refrescar dashboard
-          }
+          onDeleted?.();
         }}
       />
     );
@@ -74,7 +47,7 @@ export default function ShiftList({ onDeleted }) {
       {shifts.length === 0 ? (
         <p>No hay registros</p>
       ) : (
-        <table style={table}>
+        <table>
           <thead>
             <tr>
               <th>Fecha</th>
@@ -109,10 +82,3 @@ export default function ShiftList({ onDeleted }) {
     </div>
   );
 }
-
-const table = {
-  width: "100%",
-  background: "white",
-  borderRadius: "10px",
-  overflow: "hidden",
-};

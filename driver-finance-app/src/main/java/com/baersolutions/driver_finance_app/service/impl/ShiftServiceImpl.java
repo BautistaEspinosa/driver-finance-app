@@ -1,18 +1,16 @@
 package com.baersolutions.driver_finance_app.service.impl;
 
 import com.baersolutions.driver_finance_app.api.dto.common.PageResponse;
-import com.baersolutions.driver_finance_app.api.dto.shift.CreateShiftRequest;
-import com.baersolutions.driver_finance_app.api.dto.shift.PatchShiftRequest;
-import com.baersolutions.driver_finance_app.api.dto.shift.ShiftResponse;
-import com.baersolutions.driver_finance_app.api.dto.shift.ShiftSummaryResponse;
-import com.baersolutions.driver_finance_app.api.dto.shift.UpdateShiftRequest;
+import com.baersolutions.driver_finance_app.api.dto.shift.*;
 import com.baersolutions.driver_finance_app.api.exception.ResourceNotFoundException;
 import com.baersolutions.driver_finance_app.domain.entity.Shift;
 import com.baersolutions.driver_finance_app.repository.ShiftRepository;
 import com.baersolutions.driver_finance_app.service.ShiftService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,6 +21,8 @@ import java.util.Objects;
 @Service
 public class ShiftServiceImpl implements ShiftService {
 
+	private static final Logger log = LoggerFactory.getLogger(ShiftServiceImpl.class);
+
 	private final ShiftRepository shiftRepository;
 
 	public ShiftServiceImpl(ShiftRepository shiftRepository) {
@@ -31,13 +31,9 @@ public class ShiftServiceImpl implements ShiftService {
 
 	@Override
 	public ShiftResponse registerShift(CreateShiftRequest request) {
-		if (request == null) {
-			throw new IllegalArgumentException("request no puede ser null");
-		}
+		Objects.requireNonNull(request, "request no puede ser null");
 
-		validateMoneyNonNullAndNonNegative(request.income(), "income");
-		validateMoneyNonNullAndNonNegative(request.gas(), "gas");
-		validateMoneyNonNullAndNonNegative(request.otherExpenses(), "otherExpenses");
+		log.info("Registrando nuevo shift para fecha: {}", request.shiftDate());
 
 		Shift shift = new Shift();
 		shift.setShiftDate(Objects.requireNonNull(request.shiftDate(), "shiftDate"));
@@ -45,9 +41,9 @@ public class ShiftServiceImpl implements ShiftService {
 		shift.setGas(request.gas());
 		shift.setOtherExpenses(request.otherExpenses());
 
-		System.out.println("🟢 Guardando shift con fecha: " + request.shiftDate());
 		Shift saved = shiftRepository.save(shift);
-		System.out.println("🟢 Shift guardado en BD: " + saved.getShiftDate());
+
+		log.info("Shift creado con id: {}", saved.getId());
 		return toResponse(saved);
 	}
 
@@ -55,8 +51,9 @@ public class ShiftServiceImpl implements ShiftService {
 	public List<ShiftResponse> getShiftHistory(LocalDate from, LocalDate to) {
 		validateRange(from, to);
 
-		return findByRange(from, to)
-				.stream()
+		log.debug("Obteniendo historial de shifts. from={}, to={}", from, to);
+
+		return findByRange(from, to).stream()
 				.sorted((a, b) -> b.getShiftDate().compareTo(a.getShiftDate()))
 				.map(this::toResponse)
 				.toList();
@@ -65,9 +62,10 @@ public class ShiftServiceImpl implements ShiftService {
 	@Override
 	public PageResponse<ShiftResponse> getShiftHistory(LocalDate from, LocalDate to, Pageable pageable) {
 		validateRange(from, to);
-		Pageable safePageable = Objects.requireNonNull(pageable, "pageable");
 
-		Page<Shift> page = findPageByRange(from, to, safePageable);
+		log.debug("Obteniendo historial paginado. from={}, to={}, page={}", from, to, pageable.getPageNumber());
+
+		Page<Shift> page = findPageByRange(from, to, pageable);
 
 		return new PageResponse<>(
 				page.getContent().stream().map(this::toResponse).toList(),
@@ -84,142 +82,103 @@ public class ShiftServiceImpl implements ShiftService {
 	public ShiftSummaryResponse getShiftSummary(LocalDate from, LocalDate to) {
 		validateRange(from, to);
 
+		log.debug("Calculando resumen de shifts. from={}, to={}", from, to);
+
 		List<Shift> shifts = findByRange(from, to);
 
-		BigDecimal totalIncome = shifts.stream()
-				.map(Shift::getIncome)
-				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal totalIncome = shifts.stream().map(Shift::getIncome).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal totalGas = shifts.stream().map(Shift::getGas).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal totalOther = shifts.stream().map(Shift::getOtherExpenses).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-		BigDecimal totalGas = shifts.stream()
-				.map(Shift::getGas)
-				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal net = totalIncome.subtract(totalGas).subtract(totalOther);
 
-		BigDecimal totalOtherExpenses = shifts.stream()
-				.map(Shift::getOtherExpenses)
-				.reduce(BigDecimal.ZERO, BigDecimal::add);
-
-		BigDecimal netEarnings = totalIncome
-				.subtract(totalGas)
-				.subtract(totalOtherExpenses);
-
-		return new ShiftSummaryResponse(totalIncome, totalGas, totalOtherExpenses, netEarnings);
+		return new ShiftSummaryResponse(totalIncome, totalGas, totalOther, net);
 	}
 
 	@Override
 	public ShiftResponse getShiftById(Long id) {
+		log.debug("Buscando shift por id: {}", id);
+
 		Shift shift = shiftRepository.findById(requireId(id))
-				.orElseThrow(() -> new ResourceNotFoundException("Shift no encontrado: " + id));
+				.orElseThrow(() -> {
+					log.warn("Shift no encontrado: {}", id);
+					return new ResourceNotFoundException("Shift no encontrado: " + id);
+				});
+
 		return toResponse(shift);
 	}
 
 	@Override
 	public ShiftResponse updateShift(Long id, UpdateShiftRequest request) {
-		if (request == null) {
-			throw new IllegalArgumentException("request no puede ser null");
-		}
+		Objects.requireNonNull(request, "request no puede ser null");
 
-		validateMoneyNonNullAndNonNegative(request.income(), "income");
-		validateMoneyNonNullAndNonNegative(request.gas(), "gas");
-		validateMoneyNonNullAndNonNegative(request.otherExpenses(), "otherExpenses");
+		log.info("Actualizando shift id: {}", id);
 
 		Shift shift = shiftRepository.findById(requireId(id))
 				.orElseThrow(() -> new ResourceNotFoundException("Shift no encontrado: " + id));
 
-		shift.setShiftDate(Objects.requireNonNull(request.shiftDate(), "shiftDate"));
+		shift.setShiftDate(request.shiftDate());
 		shift.setIncome(request.income());
 		shift.setGas(request.gas());
 		shift.setOtherExpenses(request.otherExpenses());
 
-		return toResponse(shiftRepository.save(shift));
+		Shift updated = shiftRepository.save(shift);
+
+		log.info("Shift actualizado id: {}", id);
+		return toResponse(updated);
 	}
 
 	@Override
 	public ShiftResponse patchShift(Long id, PatchShiftRequest request) {
-		if (request == null) {
-			throw new IllegalArgumentException("request no puede ser null");
-		}
-		if (request.shiftDate() == null
-				&& request.income() == null
-				&& request.gas() == null
-				&& request.otherExpenses() == null) {
-			throw new IllegalArgumentException("Debe enviar al menos un campo para actualizar");
-		}
+		Objects.requireNonNull(request, "request no puede ser null");
+
+		log.info("Patch shift id: {}", id);
 
 		Shift shift = shiftRepository.findById(requireId(id))
 				.orElseThrow(() -> new ResourceNotFoundException("Shift no encontrado: " + id));
 
-		if (request.shiftDate() != null) {
-			shift.setShiftDate(request.shiftDate());
-		}
-		if (request.income() != null) {
-			validateMoneyNonNullAndNonNegative(request.income(), "income");
-			shift.setIncome(request.income());
-		}
-		if (request.gas() != null) {
-			validateMoneyNonNullAndNonNegative(request.gas(), "gas");
-			shift.setGas(request.gas());
-		}
-		if (request.otherExpenses() != null) {
-			validateMoneyNonNullAndNonNegative(request.otherExpenses(), "otherExpenses");
-			shift.setOtherExpenses(request.otherExpenses());
-		}
+		if (request.shiftDate() != null) shift.setShiftDate(request.shiftDate());
+		if (request.income() != null) shift.setIncome(request.income());
+		if (request.gas() != null) shift.setGas(request.gas());
+		if (request.otherExpenses() != null) shift.setOtherExpenses(request.otherExpenses());
 
 		return toResponse(shiftRepository.save(shift));
 	}
 
 	@Override
 	public void deleteShift(Long id) {
+		log.warn("Eliminando shift id: {}", id);
+
 		Shift shift = shiftRepository.findById(requireId(id))
 				.orElseThrow(() -> new ResourceNotFoundException("Shift no encontrado: " + id));
 
 		shiftRepository.delete(shift);
 	}
 
+	// ===================== HELPERS =====================
+
 	private List<Shift> findByRange(LocalDate from, LocalDate to) {
-		if (from != null && to != null) {
-			return shiftRepository.findByShiftDateBetween(from, to);
-		}
-		if (from != null) {
-			return shiftRepository.findByShiftDateGreaterThanEqual(from);
-		}
-		if (to != null) {
-			return shiftRepository.findByShiftDateLessThanEqual(to);
-		}
+		if (from != null && to != null) return shiftRepository.findByShiftDateBetween(from, to);
+		if (from != null) return shiftRepository.findByShiftDateGreaterThanEqual(from);
+		if (to != null) return shiftRepository.findByShiftDateLessThanEqual(to);
 		return shiftRepository.findAll(Sort.by(Sort.Direction.DESC, "shiftDate"));
 	}
 
 	private Page<Shift> findPageByRange(LocalDate from, LocalDate to, Pageable pageable) {
-		if (from != null && to != null) {
-			return shiftRepository.findByShiftDateBetween(from, to, pageable);
-		}
-		if (from != null) {
-			return shiftRepository.findByShiftDateGreaterThanEqual(from, pageable);
-		}
-		if (to != null) {
-			return shiftRepository.findByShiftDateLessThanEqual(to, pageable);
-		}
+		if (from != null && to != null) return shiftRepository.findByShiftDateBetween(from, to, pageable);
+		if (from != null) return shiftRepository.findByShiftDateGreaterThanEqual(from, pageable);
+		if (to != null) return shiftRepository.findByShiftDateLessThanEqual(to, pageable);
 		return shiftRepository.findAll(pageable);
 	}
 
 	private Long requireId(Long id) {
-		if (id == null) {
-			throw new IllegalArgumentException("id no puede ser null");
-		}
+		if (id == null) throw new IllegalArgumentException("id no puede ser null");
 		return id;
 	}
 
 	private void validateRange(LocalDate from, LocalDate to) {
 		if (from != null && to != null && from.isAfter(to)) {
 			throw new IllegalArgumentException("from no puede ser mayor que to");
-		}
-	}
-
-	private void validateMoneyNonNullAndNonNegative(BigDecimal value, String fieldName) {
-		if (value == null) {
-			throw new IllegalArgumentException(fieldName + " no puede ser null");
-		}
-		if (value.signum() < 0) {
-			throw new IllegalArgumentException(fieldName + " no puede ser negativo");
 		}
 	}
 
@@ -230,14 +189,7 @@ public class ShiftServiceImpl implements ShiftService {
 				shift.getIncome(),
 				shift.getGas(),
 				shift.getOtherExpenses(),
-				calculateNetEarnings(shift.getIncome(), shift.getGas(), shift.getOtherExpenses())
+				shift.getIncome().subtract(shift.getGas()).subtract(shift.getOtherExpenses())
 		);
-	}
-
-	private BigDecimal calculateNetEarnings(BigDecimal income, BigDecimal gas, BigDecimal otherExpenses) {
-		BigDecimal safeIncome = income != null ? income : BigDecimal.ZERO;
-		BigDecimal safeGas = gas != null ? gas : BigDecimal.ZERO;
-		BigDecimal safeOtherExpenses = otherExpenses != null ? otherExpenses : BigDecimal.ZERO;
-		return safeIncome.subtract(safeGas).subtract(safeOtherExpenses);
 	}
 }

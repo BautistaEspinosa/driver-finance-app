@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WeeklyGoalRepository extends JpaRepository<WeeklyGoal, Long> {
 
-  Optional<WeeklyGoal> findByStartDateLessThanEqualAndEndDateGreaterThanEqual(
+  List<WeeklyGoal> findByStartDateLessThanEqualAndEndDateGreaterThanEqual(
       LocalDate date1,
       LocalDate date2
   );

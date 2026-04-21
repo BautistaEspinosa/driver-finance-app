@@ -3,16 +3,16 @@ import { getSummary, getShifts } from "../api/shiftApi";
 import DailyGoal from "../components/DailyGoal";
 import WeeklyGoal from "../components/WeeklyGoal";
 
-export default function Dashboard({ refresh }) {
+export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [filter, setFilter] = useState("today");
   const [displayDate, setDisplayDate] = useState("");
   const [groupedData, setGroupedData] = useState({});
 
   useEffect(() => {
-    console.log("Tipo filtro:", filter, "Refresh:", refresh);
+    console.log("Tipo filtro:", filter);
     loadSummary(filter);
-  }, [filter, refresh]);
+  }, [filter]);
 
   const getLastShiftDate = async () => {
     const shifts = await getShifts();
@@ -24,7 +24,12 @@ export default function Dashboard({ refresh }) {
       return null;
     }
 
-    return shifts[0].shiftDate;
+    // ✅ Ordenamos por fecha DESC para asegurar el último
+    const sorted = [...shifts].sort((a, b) =>
+      b.shiftDate.localeCompare(a.shiftDate)
+    );
+
+    return sorted[0].shiftDate;
   };
 
   const groupByDay = (shifts) => {
@@ -47,47 +52,50 @@ export default function Dashboard({ refresh }) {
   };
 
   const loadSummary = async (type) => {
-    let params = "";
-    let lastDate = null;
-
-    if (type === "today" || type === "week") {
-      lastDate = await getLastShiftDate();
-      if (!lastDate) {
-        setSummary(null);
-        return;
-      }
-    }
-
-    let from, to;
-
-    if (type === "today") {
-      from = lastDate;
-      to = lastDate;
-      params = `?from=${from}&to=${to}`;
-      setDisplayDate(from);
-    }
-
-    if (type === "week") {
-      const [y, m, d] = lastDate.split("-");
-      const dateObj = new Date(y, m - 1, d);
-
-      const firstDay = new Date(dateObj);
-      firstDay.setDate(dateObj.getDate() - dateObj.getDay());
-
-      from = firstDay.toLocaleDateString("en-CA");
-      to = lastDate;
-
-      params = `?from=${from}&to=${to}`;
-      setDisplayDate(`${from} - ${to}`);
-    }
-
-    if (type === "all") {
-      setDisplayDate("Todos los registros");
-    }
-
     try {
-      const summaryRes = await getSummary(params);
-      setSummary(summaryRes.data);
+      let params = "";
+      let lastDate = null;
+
+      if (type === "today" || type === "week") {
+        lastDate = await getLastShiftDate();
+
+        if (!lastDate) {
+          setSummary(null);
+          setGroupedData({});
+          return;
+        }
+      }
+
+      let from, to;
+
+      if (type === "today") {
+        from = lastDate;
+        to = lastDate;
+        params = `?from=${from}&to=${to}`;
+        setDisplayDate(from);
+      }
+
+      if (type === "week") {
+        const [y, m, d] = lastDate.split("-");
+        const dateObj = new Date(y, m - 1, d);
+
+        const firstDay = new Date(dateObj);
+        firstDay.setDate(dateObj.getDate() - dateObj.getDay());
+
+        from = firstDay.toLocaleDateString("en-CA");
+        to = lastDate;
+
+        params = `?from=${from}&to=${to}`;
+        setDisplayDate(`${from} - ${to}`);
+      }
+
+      if (type === "all") {
+        setDisplayDate("Todos los registros");
+      }
+
+      // ✅ YA NO .data.data
+      const summaryData = await getSummary(params);
+      setSummary(summaryData);
 
       const shifts = await getShifts();
 
@@ -108,9 +116,11 @@ export default function Dashboard({ refresh }) {
       }
 
       setGroupedData(groupByDay(filtered));
+
     } catch (error) {
       console.error("Error cargando summary:", error);
       setSummary(null);
+      setGroupedData({});
     }
   };
 
@@ -127,27 +137,23 @@ export default function Dashboard({ refresh }) {
           <WeeklyGoal />
         </div>
       </div>
-      {/* 🔽 Summary condicional */}
-      {!summary ? (
 
+      {!summary ? (
         <p>No hay datos aún</p>
       ) : (
         <>
-          {/* Filtros */}
           <div style={{ marginBottom: "20px" }}>
             <button onClick={() => setFilter("today")}>Hoy</button>
             <button onClick={() => setFilter("week")}>Semana</button>
             <button onClick={() => setFilter("all")}>Todo</button>
           </div>
 
-          {/* Card principal */}
           <div style={cardMain}>
             <h2>Ganancia neta</h2>
             <h1>${summary.netEarnings}</h1>
             <p>Periodo: {displayDate}</p>
           </div>
 
-          {/* Cards detalle */}
           <div style={{ display: "flex", gap: "15px" }}>
             <div style={card}>
               <h3>Ingresos</h3>
@@ -165,7 +171,6 @@ export default function Dashboard({ refresh }) {
             </div>
           </div>
 
-          {/* Agrupación */}
           <div style={{ marginTop: "20px" }}>
             <h3>Ganancias por día</h3>
 

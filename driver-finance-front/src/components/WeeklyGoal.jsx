@@ -14,17 +14,18 @@ export default function WeeklyGoal() {
 
   const loadGoal = async () => {
     try {
-      const res = await getWeeklyGoal();
+      const data = await getWeeklyGoal();
 
-      if (res.success) {
-        setGoal(res.data);
-      } else if (res.error === "No hay meta activa") {
-        setGoal(null); // estado normal
+      if (!data || data.amount <= 0) {
+        setGoal(null);
       } else {
-        setError(res.error); // errores reales
+        setGoal(data);
       }
+
+      setError("");
     } catch (err) {
       setError("Error de conexión");
+      setGoal(null);
     } finally {
       setLoading(false);
     }
@@ -40,18 +41,11 @@ export default function WeeklyGoal() {
     setError("");
 
     try {
-      const res = await createWeeklyGoal({
-        amount: Number(amount),
-      });
-
-      if (res.success) {
-        setAmount("");
-        loadGoal(); // 🔥 recargar meta
-      } else {
-        setError(res.error);
-      }
-    } catch {
-      setError("Error de conexión");
+      await createWeeklyGoal({ amount: Number(amount) });
+      setAmount("");
+      await loadGoal();
+    } catch (err) {
+      setError(err.message);
     } finally {
       setSaving(false);
     }
@@ -61,69 +55,36 @@ export default function WeeklyGoal() {
     new Intl.NumberFormat("es-MX", {
       style: "currency",
       currency: "MXN",
-    }).format(value);
+    }).format(value || 0);
 
-  if (loading) return <p>Cargando meta semanal...</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
-
-  // 🔥 CASO 1: NO HAY META
-  if (!goal) {
-    return (
-      <div>
-        <h2>Meta semanal</h2>
-
-        <input
-          type="number"
-          placeholder="Ej. 5000"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
-
-        <button onClick={handleCreate} disabled={saving}>
-          {saving ? "Guardando..." : "Guardar"}
-        </button>
-      </div>
-    );
-  }
-
-  // 🔥 CASO 2: SÍ HAY META
-
-  const percentage = Number(goal.percentage);
-  const progressWidth = Math.min(percentage, 100);
-  const remaining = Math.max(Number(goal.remaining), 0);
-
-  let progressColor = "red";
-  if (percentage >= 50 && percentage < 80) progressColor = "orange";
-  if (percentage >= 80) progressColor = "green";
+  if (loading) return <p>Cargando...</p>;
 
   return (
     <div>
       <h2>Meta semanal</h2>
 
-      <p>Meta: {formatMoney(goal.amount)}</p>
-      <p>Llevas: {formatMoney(goal.current)}</p>
-      <p>Te falta: {formatMoney(remaining)}</p>
-      <p>Progreso: {percentage.toFixed(0)}%</p>
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <div
-        style={{
-          width: "100%",
-          height: "20px",
-          background: "#ddd",
-          borderRadius: "10px",
-          overflow: "hidden",
-          marginTop: "10px",
-        }}
-      >
-        <div
-          style={{
-            width: `${progressWidth}%`,
-            height: "100%",
-            background: progressColor,
-            transition: "0.3s",
-          }}
-        />
-      </div>
+      {!goal ? (
+        <>
+          <input
+            type="number"
+            placeholder="Ej. 5000"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+          <button onClick={handleCreate} disabled={saving}>
+            Guardar
+          </button>
+        </>
+      ) : (
+        <>
+          <p>Meta: {formatMoney(goal.amount)}</p>
+          <p>Llevas: {formatMoney(goal.current)}</p>
+          <p>Te falta: {formatMoney(goal.remaining)}</p>
+          <p>Progreso: {goal.percentage.toFixed(0)}%</p>
+        </>
+      )}
     </div>
   );
 }

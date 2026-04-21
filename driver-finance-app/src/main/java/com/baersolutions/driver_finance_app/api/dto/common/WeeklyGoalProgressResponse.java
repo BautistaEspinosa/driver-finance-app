@@ -10,4 +10,15 @@ public record WeeklyGoalProgressResponse(
     BigDecimal current,
     BigDecimal remaining,
     BigDecimal percentage
-) {}
+) {
+  public static WeeklyGoalProgressResponse empty() {
+    return new WeeklyGoalProgressResponse(
+        BigDecimal.ZERO,
+        null,
+        null,
+        BigDecimal.ZERO,
+        BigDecimal.ZERO,
+        BigDecimal.ZERO
+    );
+  }
+}

@@ -9,36 +9,25 @@ export default function EditShift({ shift, onUpdated }) {
   const buildPatchPayload = (original, updated) => {
     const payload = {};
 
-    if (original.shiftDate !== updated.shiftDate) {
+    if (original.shiftDate !== updated.shiftDate)
       payload.shiftDate = updated.shiftDate;
-    }
 
-    if (Number(original.income) !== Number(updated.income)) {
+    if (Number(original.income) !== Number(updated.income))
       payload.income = updated.income;
-    }
 
-    if (Number(original.gas) !== Number(updated.gas)) {
+    if (Number(original.gas) !== Number(updated.gas))
       payload.gas = updated.gas;
-    }
 
-    if (
-      Number(original.otherExpenses) !== Number(updated.otherExpenses)
-    ) {
+    if (Number(original.otherExpenses) !== Number(updated.otherExpenses))
       payload.otherExpenses = updated.otherExpenses;
-    }
-
-    console.log("PATCH payload generado:", payload);
 
     return payload;
   };
 
   const handleUpdate = async (data) => {
-    console.log("Datos recibidos del form:", data);
-
     const patchPayload = buildPatchPayload(shift, data);
 
     if (Object.keys(patchPayload).length === 0) {
-      console.warn("No hay cambios para actualizar");
       setMessage("No hiciste cambios");
       return;
     }
@@ -47,19 +36,13 @@ export default function EditShift({ shift, onUpdated }) {
     setMessage("");
 
     try {
-      const res = await patchShift(shift.id, patchPayload);
+      await patchShift(shift.id, patchPayload);
 
-      console.log("Respuesta PATCH:", res);
+      setMessage("Turno actualizado correctamente");
+      onUpdated();
 
-      if (res.success) {
-        setMessage("Turno actualizado correctamente");
-        onUpdated();
-      } else {
-        setMessage(res.error || "Error al actualizar");
-      }
     } catch (error) {
-      console.error("Error:", error);
-      setMessage("Error de conexión");
+      setMessage(error.message || "Error de conexión");
     } finally {
       setLoading(false);
     }
@@ -77,15 +60,7 @@ export default function EditShift({ shift, onUpdated }) {
         initialData={shift}
       />
 
-      <button
-        onClick={() => {
-          console.log("Cancelando edición");
-          onUpdated();
-        }}
-        style={{ marginTop: "10px" }}
-      >
-        Cancelar
-      </button>
+      <button onClick={onUpdated}>Cancelar</button>
     </div>
   );
 }
