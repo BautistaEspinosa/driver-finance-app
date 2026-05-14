@@ -1,209 +1,115 @@
 import { useEffect, useState } from "react";
 import { getSummary, getShifts } from "../api/shiftApi";
-import DailyGoal from "../components/DailyGoal";
-import WeeklyGoal from "../components/WeeklyGoal";
+import { formatMoney } from "../utils/format";
+import GoalProgress from "../components/GoalProgress";
 
-export default function Dashboard() {
+export default function Dashboard({ refresh }) {
   const [summary, setSummary] = useState(null);
-  const [filter, setFilter] = useState("today");
-  const [displayDate, setDisplayDate] = useState("");
-  const [groupedData, setGroupedData] = useState({});
+  const [grouped, setGrouped] = useState({});
+  const [filter, setFilter]   = useState("today");
+  const [error, setError]     = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    console.log("Tipo filtro:", filter);
-    loadSummary(filter);
-  }, [filter]);
+    load();
+  }, [filter, refresh]);
 
-  const getLastShiftDate = async () => {
-    const shifts = await getShifts();
+  const buildParams = () => {
+    const today = new Date().toISOString().split("T")[0];
 
-    console.log("Shifts recibidos:", shifts);
-
-    if (!shifts || shifts.length === 0) {
-      console.warn("No hay fechas registradas");
-      return null;
+    if (filter === "today") {
+      return `?from=${today}&to=${today}`;
     }
 
-    // ✅ Ordenamos por fecha DESC para asegurar el último
-    const sorted = [...shifts].sort((a, b) =>
-      b.shiftDate.localeCompare(a.shiftDate)
-    );
+    if (filter === "week") {
+      const d     = new Date(today);
+      const first = new Date(d);
+      first.setDate(d.getDate() - d.getDay());
+      const from = first.toISOString().split("T")[0];
+      return `?from=${from}&to=${today}`;
+    }
 
-    return sorted[0].shiftDate;
+    return "";
   };
 
-  const groupByDay = (shifts) => {
-    const result = {};
+  const load = async () => {
+    setLoading(true);
+    setError("");
 
-    shifts.forEach((s) => {
-      const net =
-        Number(s.income) -
-        Number(s.gas) -
-        Number(s.otherExpenses);
+    const params = buildParams();
 
-      if (!result[s.shiftDate]) {
-        result[s.shiftDate] = 0;
-      }
+    let summaryData = null;
+    let shiftsData = [];
 
-      result[s.shiftDate] += net;
-    });
-
-    return result;
-  };
-
-  const loadSummary = async (type) => {
+    // 🔹 summary = crítico
     try {
-      let params = "";
-      let lastDate = null;
-
-      if (type === "today" || type === "week") {
-        lastDate = await getLastShiftDate();
-
-        if (!lastDate) {
-          setSummary(null);
-          setGroupedData({});
-          return;
-        }
-      }
-
-      let from, to;
-
-      if (type === "today") {
-        from = lastDate;
-        to = lastDate;
-        params = `?from=${from}&to=${to}`;
-        setDisplayDate(from);
-      }
-
-      if (type === "week") {
-        const [y, m, d] = lastDate.split("-");
-        const dateObj = new Date(y, m - 1, d);
-
-        const firstDay = new Date(dateObj);
-        firstDay.setDate(dateObj.getDate() - dateObj.getDay());
-
-        from = firstDay.toLocaleDateString("en-CA");
-        to = lastDate;
-
-        params = `?from=${from}&to=${to}`;
-        setDisplayDate(`${from} - ${to}`);
-      }
-
-      if (type === "all") {
-        setDisplayDate("Todos los registros");
-      }
-
-      // ✅ YA NO .data.data
-      const summaryData = await getSummary(params);
-      setSummary(summaryData);
-
-      const shifts = await getShifts();
-
-      let filtered = [];
-
-      if (type === "today") {
-        filtered = shifts.filter((s) => s.shiftDate === lastDate);
-      }
-
-      if (type === "week") {
-        filtered = shifts.filter(
-          (s) => s.shiftDate >= from && s.shiftDate <= to
-        );
-      }
-
-      if (type === "all") {
-        filtered = shifts;
-      }
-
-      setGroupedData(groupByDay(filtered));
-
-    } catch (error) {
-      console.error("Error cargando summary:", error);
-      setSummary(null);
-      setGroupedData({});
+      summaryData = await getSummary(params);
+    } catch (e) {
+      console.error("Error summary", e);
+      setError("No se pudo cargar el resumen.");
     }
+
+    // 🔹 shifts = opcional (no rompe la app)
+    try {
+      shiftsData = await getShifts(params);
+    } catch (e) {
+      console.error("Error shifts", e);
+    }
+
+    setSummary(summaryData);
+    setGrouped(groupByDay(shiftsData));
+
+    setLoading(false);
   };
+
+  const groupByDay = (shifts) =>
+    shifts.reduce((acc, s) => {
+      acc[s.shiftDate] =
+        (acc[s.shiftDate] || 0) + Number(s.netEarnings);
+      return acc;
+    }, {});
 
   return (
     <div>
       <h1>Dashboard</h1>
 
-      <div style={{ display: "flex", gap: "20px", marginBottom: "20px", flexWrap: "wrap" }}>
-        <div style={card}>
-          <DailyGoal />
-        </div>
+      <GoalProgress />
 
-        <div style={card}>
-          <WeeklyGoal />
-        </div>
+      <div style={{ display: "flex", gap: "8px", margin: "16px 0" }}>
+        <button onClick={() => setFilter("today")}  disabled={filter === "today"}>Hoy</button>
+        <button onClick={() => setFilter("week")}   disabled={filter === "week"}>Semana</button>
+        <button onClick={() => setFilter("all")}    disabled={filter === "all"}>Todo</button>
       </div>
 
-      {!summary ? (
-        <p>No hay datos aún</p>
-      ) : (
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {loading && <p>Cargando...</p>}
+
+      {!loading && !summary && !error && (
+        <p>No hay datos para el período seleccionado.</p>
+      )}
+
+      {!loading && summary && (
         <>
-          <div style={{ marginBottom: "20px" }}>
-            <button onClick={() => setFilter("today")}>Hoy</button>
-            <button onClick={() => setFilter("week")}>Semana</button>
-            <button onClick={() => setFilter("all")}>Todo</button>
-          </div>
+          <h2>Neto: {formatMoney(summary.netEarnings)}</h2>
 
-          <div style={cardMain}>
-            <h2>Ganancia neta</h2>
-            <h1>${summary.netEarnings}</h1>
-            <p>Periodo: {displayDate}</p>
-          </div>
+          <h3>Ingresos por día</h3>
 
-          <div style={{ display: "flex", gap: "15px" }}>
-            <div style={card}>
-              <h3>Ingresos</h3>
-              <p>${summary.totalIncome}</p>
-            </div>
-
-            <div style={card}>
-              <h3>Gas</h3>
-              <p>${summary.totalGas}</p>
-            </div>
-
-            <div style={card}>
-              <h3>Otros</h3>
-              <p>${summary.totalOtherExpenses}</p>
-            </div>
-          </div>
-
-          <div style={{ marginTop: "20px" }}>
-            <h3>Ganancias por día</h3>
-
-            {Object.keys(groupedData).length === 0 ? (
-              <p>No hay datos</p>
-            ) : (
-              <ul>
-                {Object.entries(groupedData).map(([date, total]) => (
+          {Object.keys(grouped).length === 0 ? (
+            <p>No hay registros</p>
+          ) : (
+            <ul>
+              {Object.entries(grouped)
+                .sort(([a], [b]) => b.localeCompare(a))
+                .map(([date, total]) => (
                   <li key={date}>
-                    {date} - ${total}
+                    {date} — {formatMoney(total)}
                   </li>
                 ))}
-              </ul>
-            )}
-          </div>
+            </ul>
+          )}
         </>
       )}
     </div>
   );
 }
-
-const cardMain = {
-  background: "white",
-  padding: "20px",
-  borderRadius: "10px",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-  marginBottom: "20px",
-};
-
-const card = {
-  background: "white",
-  padding: "15px",
-  borderRadius: "10px",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-  flex: 1,
-};

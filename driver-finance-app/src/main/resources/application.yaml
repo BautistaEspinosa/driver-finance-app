@@ -1,3 +1,4 @@
+# ── Configuración base (siempre activa) ────────────────────────────────────
 spring:
   application:
     name: driver-finance-app
@@ -18,18 +19,32 @@ spring:
 
   h2:
     console:
-      enabled: true
-      path: /h2-console
+      enabled: false   # deshabilitado por defecto
 
 server:
   port: 8080
 
 logging:
   level:
-    root: info                  # Nivel global
-    com.baersolutions: debug   # Tu app (más detalle)
-    org.hibernate.SQL: debug   # Ver queries SQL
-    org.hibernate.orm.jdbc.bind: trace  # Ver parámetros de queries
-
+    root: info
+    com.baersolutions: debug
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+app:
+  cors:
+    allowed-origins: http://localhost:5173
+
+---
+# ── Perfil local (actívalo con --spring.profiles.active=local) ─────────────
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console

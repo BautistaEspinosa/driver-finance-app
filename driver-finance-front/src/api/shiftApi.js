@@ -1,84 +1,90 @@
-const BASE_URL = "http://localhost:8080/api/shifts";
-const BASE_URL_WEEKLY_GOAL = "http://localhost:8080/api/weekly-goals";
+const BASE_URL = `${import.meta.env.VITE_API_URL}/shifts`;
+const BASE_URL_GOALS = `${import.meta.env.VITE_API_URL}/goals`;
 
-// 🔥 helper centralizado
 const handleResponse = async (res) => {
-  const json = await res.json();
+	const json = await res.json();
 
-  if (!json.success) {
-    throw new Error(json.error || "Error desconocido");
-  }
+	if (!json.success) {
+		const err = new Error(json.error || "Error desconocido");
+		err.status = res.status;
+		throw err;
+	}
 
-  return json.data;
+	return json.data;
 };
 
-// =======================
-// SHIFTS
-// =======================
-
-export const getShifts = async () => {
-  const res = await fetch(BASE_URL);
-  return handleResponse(res);
-};
-
-export const createShift = async (payload) => {
-  const res = await fetch(BASE_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  return handleResponse(res);
+export const getShifts = async (params = "") => {
+	const res = await fetch(`${BASE_URL}${params}`);
+	return handleResponse(res);
 };
 
 export const getSummary = async (params = "") => {
-  const res = await fetch(`${BASE_URL}/summary${params}`);
-  return handleResponse(res);
+	const res = await fetch(`${BASE_URL}/summary${params}`);
+	return handleResponse(res);
 };
 
-export const deleteShift = async (id) => {
-  const res = await fetch(`${BASE_URL}/${id}`, {
-    method: "DELETE",
-  });
+export const createShift = async (payload) => {
+	const res = await fetch(BASE_URL, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(payload),
+	});
 
-  return handleResponse(res);
+	return handleResponse(res);
 };
 
 export const updateShift = async (id, payload) => {
-  const res = await fetch(`${BASE_URL}/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+	const res = await fetch(`${BASE_URL}/${id}`, {
+		method: "PUT",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(payload),
+	});
 
-  return handleResponse(res);
+	return handleResponse(res);
 };
 
 export const patchShift = async (id, payload) => {
-  const res = await fetch(`${BASE_URL}/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+	const res = await fetch(`${BASE_URL}/${id}`, {
+		method: "PATCH",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(payload),
+	});
 
-  return handleResponse(res);
+	return handleResponse(res);
 };
 
-// =======================
-// WEEKLY GOAL
-// =======================
+export const deleteShift = async (id) => {
+	const res = await fetch(`${BASE_URL}/${id}`, {
+		method: "DELETE",
+	});
 
-export const getWeeklyGoal = async () => {
-  const res = await fetch(`${BASE_URL_WEEKLY_GOAL}/current`);
-  return handleResponse(res);
+	if (!res.ok) {
+		let message = "Error al eliminar";
+
+		try {
+			const json = await res.json();
+			message = json.error || message;
+		} catch {}
+
+		const err = new Error(message);
+		err.status = res.status;
+		throw err;
+	}
+
+	return null;
 };
 
-export const createWeeklyGoal = async (payload) => {
-  const res = await fetch(BASE_URL_WEEKLY_GOAL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+export const getGoalProgress = async () => {
+	const res = await fetch(`${BASE_URL_GOALS}/current`);
+	return handleResponse(res);
+};
 
-  return handleResponse(res);
+export const createGoal = async (payload) => {
+	const res = await fetch(BASE_URL_GOALS, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(payload),
+	});
+
+	return handleResponse(res);
 };
