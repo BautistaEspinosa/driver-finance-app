@@ -77,7 +77,7 @@ public class GoalServiceImpl implements GoalService {
     BigDecimal remaining = goal.getTargetAmount().subtract(current);
 
     long daysPassed = ChronoUnit.DAYS.between(goal.getStartDate(), today) + 1;
-    long daysLeft = ChronoUnit.DAYS.between(today, goal.getEndDate());
+    long daysLeft = ChronoUnit.DAYS.between(today, goal.getEndDate()) + 1;
 
     if (daysLeft < 0) {
       daysLeft = 0;
