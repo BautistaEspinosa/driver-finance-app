@@ -1,5 +1,6 @@
 const BASE_URL = `${import.meta.env.VITE_API_URL}/shifts`;
 const BASE_URL_GOALS = `${import.meta.env.VITE_API_URL}/goals`;
+const BASE_URL_DEV = `${import.meta.env.VITE_API_URL}/dev/time`;
 
 const handleResponse = async (res) => {
 	const json = await res.json();
@@ -26,7 +27,9 @@ export const getSummary = async (params = "") => {
 export const createShift = async (payload) => {
 	const res = await fetch(BASE_URL, {
 		method: "POST",
-		headers: { "Content-Type": "application/json" },
+		headers: {
+			"Content-Type": "application/json",
+		},
 		body: JSON.stringify(payload),
 	});
 
@@ -36,7 +39,9 @@ export const createShift = async (payload) => {
 export const updateShift = async (id, payload) => {
 	const res = await fetch(`${BASE_URL}/${id}`, {
 		method: "PUT",
-		headers: { "Content-Type": "application/json" },
+		headers: {
+			"Content-Type": "application/json",
+		},
 		body: JSON.stringify(payload),
 	});
 
@@ -46,7 +51,9 @@ export const updateShift = async (id, payload) => {
 export const patchShift = async (id, payload) => {
 	const res = await fetch(`${BASE_URL}/${id}`, {
 		method: "PATCH",
-		headers: { "Content-Type": "application/json" },
+		headers: {
+			"Content-Type": "application/json",
+		},
 		body: JSON.stringify(payload),
 	});
 
@@ -68,6 +75,7 @@ export const deleteShift = async (id) => {
 
 		const err = new Error(message);
 		err.status = res.status;
+
 		throw err;
 	}
 
@@ -82,8 +90,31 @@ export const getGoalProgress = async () => {
 export const createGoal = async (payload) => {
 	const res = await fetch(BASE_URL_GOALS, {
 		method: "POST",
-		headers: { "Content-Type": "application/json" },
+		headers: {
+			"Content-Type": "application/json",
+		},
 		body: JSON.stringify(payload),
+	});
+
+	return handleResponse(res);
+};
+
+export const getCurrentDevDate = async () => {
+	const res = await fetch(BASE_URL_DEV);
+	return handleResponse(res);
+};
+
+export const setDevDate = async (date) => {
+	const res = await fetch(`${BASE_URL_DEV}?date=${date}`, {
+		method: "PUT",
+	});
+
+	return handleResponse(res);
+};
+
+export const resetDevDate = async () => {
+	const res = await fetch(BASE_URL_DEV, {
+		method: "DELETE",
 	});
 
 	return handleResponse(res);

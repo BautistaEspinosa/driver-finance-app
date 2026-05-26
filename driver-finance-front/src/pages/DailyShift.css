@@ -1,305 +1,183 @@
-/* DailyShift.css */
-
-.daily-shift-page {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  background: #f5f7fb;
-  min-height: 100vh;
+.daily-shift-container {
+	min-height: 100vh;
+	background: #101014;
+	padding: 24px;
+	color: white;
 }
 
-/* =========================
-   HEADER
-========================= */
-
-.date-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+.daily-shift-card {
+	max-width: 700px;
+	margin: 0 auto;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
 }
 
-.date-header h1 {
-  font-size: 1.5rem;
-  margin: 0;
-  color: #1e293b;
+.header h1 {
+	font-size: 2rem;
+	margin-bottom: 4px;
 }
 
-.date-header button {
-  width: 42px;
-  height: 42px;
-  border: none;
-  border-radius: 12px;
-  background: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+.header p {
+	color: #9ca3af;
 }
 
-/* =========================
-   CARD
-========================= */
-
-.card {
-  background: white;
-  border-radius: 20px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+.goal-card,
+.shift-card,
+.empty-goal-card {
+	background: #1a1a22;
+	border-radius: 16px;
+	padding: 20px;
+	border: 1px solid #2a2a35;
 }
 
-.card h2 {
-  margin: 0;
-  color: #0f172a;
-  font-size: 1.3rem;
+.goal-card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
 }
 
-/* =========================
-   FIELDS
-========================= */
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.goal-grid,
+.resume-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 16px;
+	margin-bottom: 20px;
 }
 
-.field label {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #475569;
+.goal-grid label,
+.resume-grid label,
+.live-net-card label {
+	font-size: 0.85rem;
+	color: #9ca3af;
 }
 
-.field input {
-  height: 46px;
-  border-radius: 12px;
-  border: 1px solid #dbe2ea;
-  padding: 0 14px;
-  font-size: 1rem;
-  outline: none;
-  transition: 0.2s;
+.goal-grid h3,
+.resume-grid h3 {
+	margin-top: 4px;
+	font-size: 1.2rem;
 }
 
-.field input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
-}
-
-/* =========================
-   SUMMARY
-========================= */
-
-.summary-card {
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 18px;
-  text-align: center;
-}
-
-.summary-label {
-  margin: 0;
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.summary-net {
-  margin: 10px 0 0;
-  font-size: 2rem;
-  color: #0f172a;
-}
-
-/* =========================
-   BUTTON
-========================= */
-
-.primary-button {
-  height: 50px;
-  border: none;
-  border-radius: 14px;
-  background: #2563eb;
-  color: white;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.primary-button:hover {
-  opacity: 0.92;
-}
-
-.primary-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* =========================
-   ALERTS
-========================= */
-
-.alert {
-  padding: 14px 16px;
-  border-radius: 14px;
-  font-weight: 600;
-}
-
-.alert.error {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.alert.success {
-  background: #dcfce7;
-  color: #166534;
-}
-
-/* =========================
-   PROGRESS
-========================= */
-
-.progress-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.progress-header {
-  display: flex;
-  justify-content: space-between;
-  font-weight: 700;
-  color: #334155;
+.progress-container {
+	height: 14px;
+	background: #2a2a35;
+	border-radius: 999px;
+	overflow: hidden;
 }
 
 .progress-bar {
-  height: 16px;
-  background: #e2e8f0;
-  border-radius: 999px;
-  overflow: hidden;
+	height: 100%;
+	background: #22c55e;
+	border-radius: 999px;
 }
 
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    #2563eb,
-    #3b82f6
-  );
-  border-radius: 999px;
-  transition: width 0.3s ease;
+.input-group {
+	display: flex;
+	flex-direction: column;
+	margin-bottom: 16px;
 }
 
-.progress-percent {
-  margin: 0;
-  text-align: center;
-  font-weight: 700;
-  color: #2563eb;
+.input-group label {
+	margin-bottom: 8px;
+	color: #d1d5db;
 }
 
-/* =========================
-   STATUS
-========================= */
-
-.status-box {
-  border-radius: 16px;
-  padding: 18px;
+.input-group input {
+	height: 48px;
+	border-radius: 12px;
+	border: 1px solid #2a2a35;
+	background: #111827;
+	color: white;
+	padding: 0 14px;
+	font-size: 1rem;
 }
 
-.status-box.good {
-  background: #dcfce7;
-  color: #166534;
+.live-net-card {
+	background: #111827;
+	border-radius: 14px;
+	padding: 20px;
+	margin-top: 12px;
+	margin-bottom: 20px;
+	text-align: center;
 }
 
-.status-box.bad {
-  background: #fee2e2;
-  color: #991b1b;
+.live-net-card h2 {
+	font-size: 2rem;
+	margin-top: 8px;
 }
 
-.status-box h3 {
-  margin: 0 0 8px;
+.primary-button,
+.secondary-button {
+	height: 48px;
+	border: none;
+	border-radius: 12px;
+	font-size: 1rem;
+	cursor: pointer;
+	font-weight: 600;
 }
 
-.status-box p {
-  margin: 0;
-  line-height: 1.5;
+.primary-button {
+	background: #2563eb;
+	color: white;
 }
 
-/* =========================
-   BREAKDOWN
-========================= */
-
-.breakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 18px;
+.secondary-button {
+	background: #2a2a35;
+	color: white;
 }
 
-.breakdown-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: #334155;
+.modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.7);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
 }
 
-.breakdown-row.total {
-  padding-top: 14px;
-  border-top: 1px solid #dbe2ea;
-  font-size: 1.05rem;
+.modal {
+	width: 100%;
+	max-width: 420px;
+	background: #1a1a22;
+	border-radius: 18px;
+	padding: 24px;
+	border: 1px solid #2a2a35;
 }
 
-/* =========================
-   DETAILS
-========================= */
-
-.goal-details {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
+.modal h2 {
+	margin-bottom: 20px;
 }
 
-.goal-details div {
-  background: #f8fafc;
-  border-radius: 14px;
-  padding: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.modal-actions {
+	display: flex;
+	gap: 12px;
+	margin-top: 20px;
 }
 
-.goal-details span {
-  color: #64748b;
+.modal-actions button {
+	flex: 1;
 }
 
-.goal-details strong {
-  color: #0f172a;
+.status {
+	padding: 6px 12px;
+	border-radius: 999px;
+	font-size: 0.8rem;
+	font-weight: 700;
 }
 
-/* =========================
-   MOBILE
-========================= */
+.status.completed {
+	background: #14532d;
+	color: #86efac;
+}
 
-@media (max-width: 480px) {
+.status.on_track {
+	background: #1e3a8a;
+	color: #93c5fd;
+}
 
-  .daily-shift-page {
-    padding: 12px;
-  }
-
-  .card {
-    padding: 16px;
-  }
-
-  .summary-net {
-    font-size: 1.7rem;
-  }
-
-  .date-header h1 {
-    font-size: 1.2rem;
-  }
+.status.behind {
+	background: #7f1d1d;
+	color: #fca5a5;
 }
